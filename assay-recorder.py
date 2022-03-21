@@ -55,7 +55,7 @@ def choose_channel(index):
 
 camera = cv.VideoCapture(-1)
 
-gp.setwarnings(True)
+gp.setwarnings(False)
 gp.setmode(gp.BOARD)
 gp.setup(7, gp.OUT)
 gp.setup(11, gp.OUT)
@@ -101,5 +101,4 @@ while True:
 
             log("Captured image from camera " + i)
     log("Ended Capture, sleeping for 15 minutes...")
-    break
     time.sleep(60 * 15)
