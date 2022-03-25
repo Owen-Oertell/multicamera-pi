@@ -23,19 +23,19 @@ log("Imports Sucessful")
 # Define adapter GPIO pins and i2c commands
 adapter = {
     "A": {
-        "i2c_cmd": "i2cset -y 0 0x70 0x00 0x04",
+        "i2c_cmd": "i2cset -y 1 0x70 0x00 0x04",
         "gpio_sta": [0, 0, 1],
     },
     "B": {
-        "i2c_cmd": "i2cset -y 0 0x70 0x00 0x05",
+        "i2c_cmd": "i2cset -y 1 0x70 0x00 0x05",
         "gpio_sta": [1, 0, 1],
     },
     "C": {
-        "i2c_cmd": "i2cset -y 0 0x70 0x00 0x06",
+        "i2c_cmd": "i2cset -y 1 0x70 0x00 0x06",
         "gpio_sta": [0, 1, 0],
     },
     "D": {
-        "i2c_cmd": "i2cset -y 0 0x70 0x00 0x07",
+        "i2c_cmd": "i2cset -y 1 0x70 0x00 0x07",
         "gpio_sta": [1, 1, 0],
     },
 }
@@ -65,40 +65,60 @@ log("Camera Adapter Setup Sucessful")
 log("Detecting Cameras...")
 
 cameraArray = [0, 0, 0, 0]
-print(
-    "Automatic Camera Detection currently not working, please enter the camera index manually"
-)
-cameras = input("Please enter names of cameras plugged in: ").upper()
+log("Automatic Camera Detection currently not working")
+log("Looking for config.cfg")
+if os.path.isfile("./config.cfg"):
+    f = open("./config.cfg")
+    cameras = f.read()
+else:
+    cameras = input("Please enter names of cameras plugged in: ").upper()
 for i in range(4):
     if chr(i + 65) in cameras:
         cameraArray[i] = 1
 # Automatic Detection not working
+camera.release()
+
+for i in ["A", "B", "C", "D"]:
+    if cameraArray[ord(i) - 65] == 1:
+        log("Camera " + i + " Detected")
+    else:
+        log("Camera " + i + " Not Detected")
 
 # create directory for assay data
 log("Creating Directories")
-home = time.strftime("%Y-%m-%d", time.localtime()) + "-assay"
-os.mkdir(home)
-for i in ["A", "B", "C", "D"]:
-    if cameraArray[ord(i) - 65] == 1:
-        os.mkdir(time.strftime("%Y-%m-%d", time.localtime()) + "-assay/" + i)
+try:
+    home = time.strftime("%Y-%m-%d", time.localtime()) + "-assay"
+    os.mkdir(home)
+    for i in ["A", "B", "C", "D"]:
+        if cameraArray[ord(i) - 65] == 1:
+            os.mkdir(
+                time.strftime("%Y-%m-%d", time.localtime()) + "-assay/" + i)
+except:
+    log("Directories already created")
 log("Finished Creating Directories")
 
 # Main loop
-while True:
+for i in range(18*4+1):
     log("Starting periodic capture...")
+    #camera = cv.VideoCapture(-1)
     for i in ["A", "B", "C", "D"]:
         if cameraArray[ord(i) - 65] == 1:
             choose_channel(i)
             time.sleep(1)
-            ret, frame = camera.read()
 
-            cv.imwrite(
-                home + "/" + i + "/" +
-                time.strftime("%Y-%m-%d-%H-%M-%S", time.localtime()) + "-" +
-                i + ".jpg", frame)
+            dr =  home + "/" + i + "/" + time.strftime("%Y-%m-%d-%H-%M-%S", time.localtime()) + "-" + i + ".jpg"
+            os.system("raspistill -t 5 -n -o ./" + dr + " -w 2028 -h 1520")
+            # the other thing we could do here is not use opencv, but instead call the raspistill camera command.
+            #ret, frame = camera.read()
+            #print(frame.shape)
+            #cv.imwrite(
+            #    home + "/" + i + "/" +
+            #    time.strftime("%Y-%m-%d-%H-%M-%S", time.localtime()) + "-" +
+            #    i + ".jpg", frame, [int(cv.IMWRITE_JPEG_QUALITY), 100])
 
             # Can add analysis here, or save and add later (async during sleeping time)
 
             log("Captured image from camera " + i)
     log("Ended Capture, sleeping for 15 minutes...")
+   # camera.release()
     time.sleep(60 * 15)
